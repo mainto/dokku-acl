@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -eo pipefail; [[ $DOKKU_TRACE ]] && set -x
+
+DOKKU_SUPER_USER="${DOKKU_SUPER_USER:-}"
+SSH_USER=$1
+SSH_NAME=$2
+DOKKU_COMMAND=$3
+APP=$4
+APP_ROOT="$DOKKU_ROOT/$APP"
+ACL="$APP_ROOT/acl"
+
+shift 2
+if [[ "$SSH_USER" != "root" && "$SSH_NAME" != $DOKKU_SUPER_USER ]]; then
+  if  [[ ! -d "$ACL" ]] || [[ "$DOKKU_COMMAND" != "storage:list" && "$DOKKU_COMMAND" != "git-hook" && "$DOKKU_COMMAND" != "git-receive-pack" && "$DOKKU_COMMAND" != "git-upload-pack" ]] ; then
+    echo "User '$SSH_NAME' does not have permissions to run this command" >&2
+    exit 1;
+  fi
+
+  ACL_FILE="$ACL/$SSH_NAME"
+
+  if [[ ! -f "$ACL_FILE" && "$SSH_NAME" != "$DOKKU_SUPER_USER" ]]; then
+    echo "User '$SSH_NAME' does not have permissions to access this app" >&2
+    exit 2;
+  fi
+fi
+exit 0;
+
